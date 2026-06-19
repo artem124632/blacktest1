@@ -1,16 +1,35 @@
 {% extends 'base.html' %}{% block content %}
-<div class="auth-wrap"><div class="auth-card">
-  <h1>Войти</h1><p class="sub">Добро пожаловать обратно в BlackDev</p>
-  <form method="post">
-    <input class="input" name="ident" placeholder="Email или ник" required>
-    <input class="input" name="password" type="password" placeholder="Пароль" required>
-    <button class="btn primary" type="submit">Войти</button>
-  </form>
-  <div class="or">— или —</div>
-  <div class="social">
-    <a class="btn" href="{{ url_for('auth_discord') }}">💬 Discord</a>
-    <a class="btn" href="{{ url_for('auth_google') }}">🔑 Google</a>
+<div class="auth-wrap auth-page-login">
+  <div class="auth-card auth-card-pro">
+    <div class="auth-glow"></div>
+    <div class="auth-head">
+      <span class="auth-kicker">BLACKDEV ACCOUNT</span>
+      <h1>Войти</h1>
+      <p class="sub">Вернитесь в профиль, покупки и поддержку BlackDev.</p>
+    </div>
+
+    <form method="post" class="auth-form">
+      <label class="field">
+        <span>Email или ник</span>
+        <input class="input" name="ident" autocomplete="username" placeholder="example@mail.ru" required>
+      </label>
+      <label class="field">
+        <span>Пароль</span>
+        <input class="input" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+      </label>
+      <button class="btn primary auth-submit" type="submit">Войти</button>
+    </form>
+
+    <div class="or"><span>или войти через</span></div>
+    <div class="social social-pro">
+      <a class="btn social-btn discord" href="{{ url_for('auth_discord') }}"><span>💬</span> Discord</a>
+      <a class="btn social-btn google" href="{{ url_for('auth_google') }}"><span>🔑</span> Google</a>
+    </div>
+
+    <div class="auth-switch">
+      <span>Нет аккаунта?</span>
+      <a href="{{ url_for('register') }}">Создать аккаунт</a>
+    </div>
   </div>
-  <div class="foot">Нет аккаунта? <a href="{{ url_for('register') }}" style="color:var(--accent)">Создать</a></div>
-</div></div>
+</div>
 {% endblock %}
