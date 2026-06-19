@@ -1,0 +1,42 @@
+{% extends 'base.html' %}{% block content %}
+<div class="auth-wrap auth-page-login">
+  <div class="auth-card auth-card-pro fade-in-up">
+    <div class="auth-glow"></div>
+    <div class="auth-head">
+      <span class="auth-kicker">НОВЫЙ ПАРОЛЬ</span>
+      <h1>Сброс пароля</h1>
+      <p class="sub">Введите код из письма и новый пароль.</p>
+    </div>
+
+    <form method="post" class="auth-form">
+      <label class="field">
+        <span>Email</span>
+        <input class="input" name="email" type="email" autocomplete="email"
+               value="{{ prefill_email or '' }}" placeholder="example@mail.ru" required>
+      </label>
+      <label class="field">
+        <span>Код из письма</span>
+        <input class="input" name="code" inputmode="numeric" pattern="[0-9]*"
+               placeholder="6-значный код" required>
+      </label>
+      <label class="field">
+        <span>Новый пароль</span>
+        <input class="input" name="password" type="password" autocomplete="new-password"
+               placeholder="Минимум 6 символов" required>
+      </label>
+      <label class="field">
+        <span>Повторите пароль</span>
+        <input class="input" name="password2" type="password" autocomplete="new-password"
+               placeholder="Ещё раз" required>
+      </label>
+      <button class="btn primary auth-submit" type="submit">Сменить пароль</button>
+    </form>
+
+    <div class="auth-switch">
+      <a href="{{ url_for('forgot_password') }}">Отправить код ещё раз</a>
+      <span> · </span>
+      <a href="{{ url_for('login') }}">Войти</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
