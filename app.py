@@ -29,10 +29,18 @@ app.config['SESSION_COOKIE_NAME'] = 'bd_sess'
 db_url = os.getenv('DATABASE_URL', '').strip()
 if db_url.startswith('postgres://'):
     db_url = db_url.replace('postgres://', 'postgresql://', 1)
+elif db_url.startswith('mysql://'):
+    db_url = db_url.replace('mysql://', 'mysql+pymysql://', 1)
 if not db_url:
     db_url = 'sqlite:///' + os.path.join(BASE_DIR, 'instance', 'blackdev.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Для MySQL/Postgres на shared-хостинге: переподключение и проверка соединения
+if db_url.startswith(('mysql+pymysql://', 'postgresql://')):
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 280,
+    }
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB
 
 # Mail
