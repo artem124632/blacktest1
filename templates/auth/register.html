@@ -1,17 +1,39 @@
 {% extends 'base.html' %}{% block content %}
-<div class="auth-wrap"><div class="auth-card">
-  <h1>Регистрация</h1><p class="sub">Создайте аккаунт BlackDev — код подтверждения придёт на почту</p>
-  <form method="post">
-    <input class="input" name="username" placeholder="Никнейм" required>
-    <input class="input" name="email" type="email" placeholder="Email" required>
-    <input class="input" name="password" type="password" placeholder="Пароль (мин. 6)" required>
-    <button class="btn primary" type="submit">Создать аккаунт</button>
-  </form>
-  <div class="or">— или —</div>
-  <div class="social">
-    <a class="btn" href="{{ url_for('auth_discord') }}">💬 Discord</a>
-    <a class="btn" href="{{ url_for('auth_google') }}">🔑 Google</a>
+<div class="auth-wrap auth-page-register">
+  <div class="auth-card auth-card-pro">
+    <div class="auth-glow"></div>
+    <div class="auth-head">
+      <span class="auth-kicker">JOIN BLACKDEV</span>
+      <h1>Регистрация</h1>
+      <p class="sub">Создайте аккаунт — код подтверждения придёт на почту.</p>
+    </div>
+
+    <form method="post" class="auth-form">
+      <label class="field">
+        <span>Никнейм</span>
+        <input class="input" name="username" autocomplete="username" placeholder="Ваш ник" required>
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input class="input" name="email" type="email" autocomplete="email" placeholder="example@mail.ru" required>
+      </label>
+      <label class="field">
+        <span>Пароль</span>
+        <input class="input" name="password" type="password" autocomplete="new-password" placeholder="Минимум 6 символов" required>
+      </label>
+      <button class="btn primary auth-submit" type="submit">Создать аккаунт</button>
+    </form>
+
+    <div class="or"><span>или продолжить через</span></div>
+    <div class="social social-pro">
+      <a class="btn social-btn discord" href="{{ url_for('auth_discord') }}"><span>💬</span> Discord</a>
+      <a class="btn social-btn google" href="{{ url_for('auth_google') }}"><span>🔑</span> Google</a>
+    </div>
+
+    <div class="auth-switch">
+      <span>Уже есть аккаунт?</span>
+      <a href="{{ url_for('login') }}">Войти</a>
+    </div>
   </div>
-  <div class="foot">Уже есть аккаунт? <a href="{{ url_for('login') }}" style="color:var(--accent)">Войти</a></div>
-</div></div>
+</div>
 {% endblock %}
