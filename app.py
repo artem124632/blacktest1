@@ -198,6 +198,69 @@ def inject_globals():
 
 def allowed_image(fn): return '.' in fn and fn.rsplit('.', 1)[1].lower() in {'png','jpg','jpeg','gif','webp','svg'}
 
+def oauth_redirect_uri(provider):
+    """Берём redirect URI из .env, а если его нет — строим правильный URL текущего сайта."""
+    env_key = f'{provider.upper()}_REDIRECT_URI'
+    endpoint = f'auth_{provider}_cb'
+    return (os.getenv(env_key) or url_for(endpoint, _external=True)).strip()
+
+def oauth_state(provider):
+    state = secrets.token_urlsafe(24)
+    session[f'oauth_state_{provider}'] = state
+    return state
+
+def check_oauth_state(provider):
+    saved = session.pop(f'oauth_state_{provider}', None)
+    got = request.args.get('state')
+    return bool(saved and got and secrets.compare_digest(saved, got))
+
+def unique_username(prefix, base):
+    safe = ''.join(ch for ch in (base or 'user') if ch.isalnum() or ch in ('_', '-')).strip('_-') or 'user'
+    safe = safe[:50]
+    username = f'{prefix}_{safe}'[:80]
+    if not User.query.filter_by(username=username).first():
+        return username
+    for _ in range(30):
+        username = f'{prefix}_{safe}_{secrets.token_hex(3)}'[:80]
+        if not User.query.filter_by(username=username).first():
+            return username
+    return f'{prefix}_{secrets.token_hex(8)}'
+
+def find_or_create_oauth_user(provider, provider_id, email, username, avatar):
+    provider_field = f'{provider}_id'
+    user = User.query.filter(getattr(User, provider_field) == provider_id).first()
+    if user:
+        if avatar and not user.avatar:
+            user.avatar = avatar
+            db.session.commit()
+        return user
+
+    email = (email or '').strip().lower() or None
+    user = User.query.filter_by(email=email).first() if email else None
+    if user:
+        setattr(user, provider_field, provider_id)
+        if avatar and not user.avatar:
+            user.avatar = avatar
+        user.verified = True
+        db.session.commit()
+        return user
+
+    user = User(
+        email=email,
+        username=unique_username('dc' if provider == 'discord' else 'g', username),
+        verified=True,
+        avatar=avatar or '',
+    )
+    setattr(user, provider_field, provider_id)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+def oauth_fail(provider, message='Не удалось войти через OAuth'):
+    app.logger.warning('%s OAuth fail: %s', provider, message)
+    flash(f'{message}. Проверь redirect URI и ключи {provider.title()}.', 'error')
+    return redirect(url_for('login'))
+
 def save_upload(file_storage, prefix='img'):
     fn = secure_filename(file_storage.filename)
     ext = fn.rsplit('.', 1)[-1].lower() if '.' in fn else 'bin'
@@ -369,61 +432,95 @@ def logout(): logout_user(); return redirect(url_for('index'))
 # Discord OAuth
 @app.route('/auth/discord')
 def auth_discord():
-    cid = os.getenv('DISCORD_CLIENT_ID'); ru = os.getenv('DISCORD_REDIRECT_URI')
-    if not cid: return 'Discord OAuth не настроен', 500
+    cid = os.getenv('DISCORD_CLIENT_ID')
+    if not cid:
+        flash('Discord OAuth не настроен: нет DISCORD_CLIENT_ID', 'error')
+        return redirect(url_for('login'))
+    ru = oauth_redirect_uri('discord')
     return redirect('https://discord.com/api/oauth2/authorize?' + urlencode(dict(
-        client_id=cid, redirect_uri=ru, response_type='code', scope='identify email')))
+        client_id=cid, redirect_uri=ru, response_type='code', scope='identify email',
+        state=oauth_state('discord'))))
 
 @app.route('/auth/discord/callback')
 def auth_discord_cb():
+    if request.args.get('error'):
+        return oauth_fail('discord', request.args.get('error_description') or request.args.get('error'))
+    if not check_oauth_state('discord'):
+        return oauth_fail('discord', 'Сессия входа устарела')
     code = request.args.get('code')
-    if not code: return redirect(url_for('login'))
-    r = requests.post('https://discord.com/api/oauth2/token', data=dict(
-        client_id=os.getenv('DISCORD_CLIENT_ID'),
-        client_secret=os.getenv('DISCORD_CLIENT_SECRET'),
-        grant_type='authorization_code', code=code,
-        redirect_uri=os.getenv('DISCORD_REDIRECT_URI')),
-        headers={'Content-Type':'application/x-www-form-urlencoded'})
-    tok = r.json().get('access_token')
-    if not tok: return 'OAuth fail', 400
-    u = requests.get('https://discord.com/api/users/@me',
-                     headers={'Authorization': f'Bearer {tok}'}).json()
-    user = User.query.filter_by(discord_id=u['id']).first()
-    if not user:
-        user = User(discord_id=u['id'], username='dc_'+u['username'][:60],
-                    email=u.get('email'), verified=True,
-                    avatar=f"https://cdn.discordapp.com/avatars/{u['id']}/{u.get('avatar')}.png" if u.get('avatar') else '')
-        db.session.add(user); db.session.commit()
-    login_user(user, remember=True); return redirect(url_for('profile'))
+    if not code:
+        return oauth_fail('discord', 'Discord не вернул код авторизации')
+    if not os.getenv('DISCORD_CLIENT_SECRET'):
+        return oauth_fail('discord', 'Discord OAuth не настроен: нет DISCORD_CLIENT_SECRET')
+    try:
+        token_resp = requests.post('https://discord.com/api/oauth2/token', data=dict(
+            client_id=os.getenv('DISCORD_CLIENT_ID'),
+            client_secret=os.getenv('DISCORD_CLIENT_SECRET'),
+            grant_type='authorization_code', code=code,
+            redirect_uri=oauth_redirect_uri('discord')),
+            headers={'Content-Type':'application/x-www-form-urlencoded'}, timeout=15)
+        token_data = token_resp.json()
+        tok = token_data.get('access_token')
+        if not tok:
+            return oauth_fail('discord', token_data.get('error_description') or token_data.get('error') or 'Discord не выдал токен')
+        user_resp = requests.get('https://discord.com/api/users/@me',
+                         headers={'Authorization': f'Bearer {tok}'}, timeout=15)
+        data = user_resp.json()
+        if not data.get('id'):
+            return oauth_fail('discord', data.get('message') or 'Discord не вернул профиль')
+        avatar = f"https://cdn.discordapp.com/avatars/{data['id']}/{data.get('avatar')}.png" if data.get('avatar') else ''
+        user = find_or_create_oauth_user('discord', data['id'], data.get('email'), data.get('username'), avatar)
+        login_user(user, remember=True)
+        return redirect(url_for('profile'))
+    except Exception as e:
+        db.session.rollback()
+        return oauth_fail('discord', str(e))
 
 # Google OAuth (минимальный)
 @app.route('/auth/google')
 def auth_google():
-    cid = os.getenv('GOOGLE_CLIENT_ID'); ru = os.getenv('GOOGLE_REDIRECT_URI')
-    if not cid: return 'Google OAuth не настроен', 500
+    cid = os.getenv('GOOGLE_CLIENT_ID')
+    if not cid:
+        flash('Google OAuth не настроен: нет GOOGLE_CLIENT_ID', 'error')
+        return redirect(url_for('login'))
+    ru = oauth_redirect_uri('google')
     return redirect('https://accounts.google.com/o/oauth2/v2/auth?' + urlencode(dict(
         client_id=cid, redirect_uri=ru, response_type='code',
-        scope='openid email profile', access_type='online')))
+        scope='openid email profile', access_type='online',
+        state=oauth_state('google'), prompt='select_account')))
 
 @app.route('/auth/google/callback')
 def auth_google_cb():
+    if request.args.get('error'):
+        return oauth_fail('google', request.args.get('error_description') or request.args.get('error'))
+    if not check_oauth_state('google'):
+        return oauth_fail('google', 'Сессия входа устарела')
     code = request.args.get('code')
-    if not code: return redirect(url_for('login'))
-    r = requests.post('https://oauth2.googleapis.com/token', data=dict(
-        code=code, client_id=os.getenv('GOOGLE_CLIENT_ID'),
-        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-        redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
-        grant_type='authorization_code')).json()
-    tok = r.get('access_token')
-    if not tok: return 'OAuth fail', 400
-    u = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
-                     headers={'Authorization': f'Bearer {tok}'}).json()
-    user = User.query.filter_by(google_id=u['id']).first()
-    if not user:
-        user = User(google_id=u['id'], username='g_'+(u.get('name','user')[:60]),
-                    email=u.get('email'), verified=True, avatar=u.get('picture',''))
-        db.session.add(user); db.session.commit()
-    login_user(user, remember=True); return redirect(url_for('profile'))
+    if not code:
+        return oauth_fail('google', 'Google не вернул код авторизации')
+    if not os.getenv('GOOGLE_CLIENT_SECRET'):
+        return oauth_fail('google', 'Google OAuth не настроен: нет GOOGLE_CLIENT_SECRET')
+    try:
+        token_resp = requests.post('https://oauth2.googleapis.com/token', data=dict(
+            code=code, client_id=os.getenv('GOOGLE_CLIENT_ID'),
+            client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+            redirect_uri=oauth_redirect_uri('google'),
+            grant_type='authorization_code'), timeout=15)
+        token_data = token_resp.json()
+        tok = token_data.get('access_token')
+        if not tok:
+            return oauth_fail('google', token_data.get('error_description') or token_data.get('error') or 'Google не выдал токен')
+        user_resp = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
+                         headers={'Authorization': f'Bearer {tok}'}, timeout=15)
+        data = user_resp.json()
+        if not data.get('id'):
+            return oauth_fail('google', data.get('error_description') or data.get('error') or 'Google не вернул профиль')
+        user = find_or_create_oauth_user('google', data['id'], data.get('email'), data.get('name'), data.get('picture',''))
+        login_user(user, remember=True)
+        return redirect(url_for('profile'))
+    except Exception as e:
+        db.session.rollback()
+        return oauth_fail('google', str(e))
 
 # ===================== ПРОФИЛЬ И ПОКУПКИ =====================
 @app.route('/profile')
