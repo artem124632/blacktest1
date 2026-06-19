@@ -1,35 +1,121 @@
-{% extends 'base.html' %}{% block content %}
-<div class="auth-wrap auth-page-login">
-  <div class="auth-card auth-card-pro">
-    <div class="auth-glow"></div>
-    <div class="auth-head">
-      <span class="auth-kicker">BLACKDEV ACCOUNT</span>
-      <h1>Войти</h1>
-      <p class="sub">Вернитесь в профиль, покупки и поддержку BlackDev.</p>
+{% extends 'base.html' %}
+{% block content %}
+
+<section class="hero" id="home">
+  {% if site_settings.get('banner_url') %}<div class="hero-banner" style="background-image:url('{{ site_settings.get('banner_url') }}')"></div>{% endif %}
+  <div class="container">
+    <h1>{{ site_settings.get('site_title','BlackDev') }}</h1>
+    <p class="tag">{{ site_settings.get('site_tagline','Премиальные сборки ReallyWorld') }}. Default · Full · Business — выбирай уровень и запускай сервер сегодня.</p>
+    <div class="cta">
+      <a class="btn primary" href="#услуги">Смотреть сборки →</a>
+      <a class="btn rgb" href="{{ site_settings.get('discord_url') }}" target="_blank">💬 Discord</a>
     </div>
-
-    <form method="post" class="auth-form">
-      <label class="field">
-        <span>Email или ник</span>
-        <input class="input" name="ident" autocomplete="username" placeholder="example@mail.ru" required>
-      </label>
-      <label class="field">
-        <span>Пароль</span>
-        <input class="input" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
-      </label>
-      <button class="btn primary auth-submit" type="submit">Войти</button>
-    </form>
-
-    <div class="or"><span>или войти через</span></div>
-    <div class="social social-pro">
-      <a class="btn social-btn discord" href="{{ url_for('auth_discord') }}"><span>💬</span> Discord</a>
-      <a class="btn social-btn google" href="{{ url_for('auth_google') }}"><span>🔑</span> Google</a>
-    </div>
-
-    <div class="auth-switch">
-      <span>Нет аккаунта?</span>
-      <a href="{{ url_for('register') }}">Создать аккаунт</a>
+    <div class="stats">
+      <div class="stat"><b>500+</b><span>Запущенных серверов</span></div>
+      <div class="stat"><b>3</b><span>Сборки RW</span></div>
+      <div class="stat"><b>24/7</b><span>Поддержка</span></div>
     </div>
   </div>
-</div>
+</section>
+
+<section id="showcase">
+  <div class="container">
+    <h2 class="section-title">Превью <span class="accent">сборок</span></h2>
+    <p class="section-sub">Скриншоты из наших проектов</p>
+    <div class="gallery">
+      {% set any_shots = [] %}
+      {% for p in products %}
+        {% for s in (p.screenshots|from_json if p.screenshots else []) %}
+          <div class="ph" data-lightbox data-src="{{ s }}"><img src="{{ s }}" alt="{{ p.title }}"></div>
+        {% endfor %}
+      {% endfor %}
+      {# placeholders if empty #}
+      {% for i in range(8) %}<div class="ph">Скриншот #{{ i+1 }}<br><small>загрузите в админке</small></div>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="услуги">
+  <div class="container">
+    <h2 class="section-title">Наши <span class="accent">услуги</span></h2>
+    <p class="section-sub">Три уровня сборок ReallyWorld — выберите свой</p>
+    <div class="svc-grid">
+      {% for p in products %}
+      <div class="svc-card">
+        <h3>{{ p.title }}</h3>
+        <p>{{ p.description }}</p>
+        <div class="price">{{ '%.0f'|format(p.price) }} ₽</div>
+        <div class="shots">
+          {% set shots = (p.screenshots|from_json if p.screenshots else []) %}
+          {% if shots %}
+            {% for s in shots %}<div class="shot" data-lightbox data-src="{{ s }}"><img src="{{ s }}" alt=""></div>{% endfor %}
+          {% else %}
+            {% set need = 7 if p.slug=='business' else 4 %}
+            {% for i in range(need) %}<div class="shot" style="display:grid;place-items:center;color:var(--muted);font-size:11px">скрин {{ i+1 }}</div>{% endfor %}
+          {% endif %}
+        </div>
+        <div class="buy">
+          <form method="post" action="{{ url_for('buy', slug=p.slug) }}" style="display:contents">
+            <button class="btn primary" name="method" value="balance">Купить с баланса</button>
+            <button class="btn" name="method" value="crypto">Крипта</button>
+            <button class="btn" name="method" value="funpay">FunPay</button>
+            <button class="btn" name="method" value="discord">Discord</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="reviews">
+  <div class="container">
+    <h2 class="section-title">Отзывы <span class="accent">клиентов</span></h2>
+    <p class="section-sub">Что говорят те, кто уже купил</p>
+    {% if current_user.is_authenticated %}
+      <form id="review-form" class="review-form">
+        <select name="product" class="input" required>
+          <option value="default">RW Default</option>
+          <option value="full">RW Full</option>
+          <option value="business">RW Business</option>
+        </select>
+        <div class="rating-pick"></div>
+        <textarea name="text" placeholder="Ваш отзыв..." maxlength="1000" required></textarea>
+        <button class="btn primary" type="submit">Отправить отзыв</button>
+      </form>
+    {% else %}
+      <p style="text-align:center;color:var(--muted);margin-bottom:24px"><a href="{{ url_for('login') }}" style="color:var(--accent)">Войдите</a>, чтобы оставить отзыв</p>
+    {% endif %}
+    <div class="reviews-grid" id="reviews-list"></div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="container">
+    <h2 class="section-title">Часто задаваемые <span class="accent">вопросы</span></h2>
+    <p class="section-sub">Если не нашли ответ — пишите в Discord</p>
+    <div class="faq">
+      {% for f in faqs %}
+      <details><summary>{{ f.question }}</summary><p>{{ f.answer }}</p></details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="contacts">
+  <div class="container">
+    <h2 class="section-title">Связь <span class="accent">с нами</span></h2>
+    <p class="section-sub">Мы всегда онлайн</p>
+    <div class="contacts">
+      <a class="contact-card" href="{{ site_settings.get('discord_url') }}" target="_blank">
+        <div class="ico">💬</div><b>Discord</b><div style="color:var(--muted);font-size:13px;margin-top:4px">Чат и поддержка</div></a>
+      <a class="contact-card" href="{{ site_settings.get('telegram_url') }}" target="_blank">
+        <div class="ico">✈️</div><b>Telegram</b><div style="color:var(--muted);font-size:13px;margin-top:4px">Новости</div></a>
+      {% if site_settings.get('funpay_url') %}
+      <a class="contact-card" href="{{ site_settings.get('funpay_url') }}" target="_blank">
+        <div class="ico">💳</div><b>FunPay</b><div style="color:var(--muted);font-size:13px;margin-top:4px">Покупка за ₽</div></a>{% endif %}
+    </div>
+  </div>
+</section>
+
 {% endblock %}
