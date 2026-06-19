@@ -1,0 +1,39 @@
+{% extends 'admin/_base.html' %}{% set active='settings' %}{% block adm %}
+<h1>Настройки сайта</h1>
+<form method="post" enctype="multipart/form-data" class="card">
+  <div class="adm-grid">
+    <div class="form-row"><label>Название сайта</label><input class="input" name="site_title" value="{{ site_settings.get('site_title','') }}"></div>
+    <div class="form-row"><label>Слоган</label><input class="input" name="site_tagline" value="{{ site_settings.get('site_tagline','') }}"></div>
+    <div class="form-row"><label>Discord URL</label><input class="input" name="discord_url" value="{{ site_settings.get('discord_url','') }}"></div>
+    <div class="form-row"><label>Telegram URL</label><input class="input" name="telegram_url" value="{{ site_settings.get('telegram_url','') }}"></div>
+    <div class="form-row"><label>FunPay URL</label><input class="input" name="funpay_url" value="{{ site_settings.get('funpay_url','') }}"></div>
+    <div class="form-row"><label>CryptoBot URL</label><input class="input" name="crypto_bot_url" value="{{ site_settings.get('crypto_bot_url','') }}"></div>
+    <div class="form-row"><label>Цвет акцент 1</label><input class="input" name="accent_color" type="color" value="{{ site_settings.get('accent_color','#ffb02e') }}"></div>
+    <div class="form-row"><label>Цвет акцент 2</label><input class="input" name="accent_color_2" type="color" value="{{ site_settings.get('accent_color_2','#ff6a00') }}"></div>
+    <div class="form-row"><label>Эффект (частицы)</label>
+      <select class="input" name="effect">
+        {% for v,t in [('none','— без эффекта —'),('summer','☀️ Лето'),('newyear','❄️ Новый год'),('halloween','🎃 Хэллоуин')] %}
+          <option value="{{ v }}" {% if site_settings.get('effect')==v %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}</select></div>
+    <div class="form-row"><label>Попап включён</label>
+      <select class="input" name="popup_enabled">
+        <option value="0" {% if site_settings.get('popup_enabled')!='1' %}selected{% endif %}>Нет</option>
+        <option value="1" {% if site_settings.get('popup_enabled')=='1' %}selected{% endif %}>Да</option>
+      </select></div>
+  </div>
+
+  <h2 style="margin:24px 0 12px">Изображения (файл или URL)</h2>
+  {% for field, label in [('logo_url','Логотип (сверху-слева)'),('badge_url','Бейдж рядом с названием'),('banner_url','Баннер на главной (фон hero)'),('bg_url','Фон всего сайта'),('popup_image','Картинка для попапа')] %}
+  <div class="card" style="margin-bottom:12px;background:var(--bg-2)">
+    <label style="display:block;margin-bottom:8px;font-weight:600">{{ label }}</label>
+    {% if site_settings.get(field) %}<img src="{{ site_settings.get(field) }}" style="max-height:80px;border-radius:8px;margin-bottom:10px">{% endif %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <input class="input" type="file" name="{{ field }}_file" accept="image/*">
+      <input class="input" type="text" name="{{ field }}_url_input" placeholder="...или вставьте URL">
+    </div>
+  </div>
+  {% endfor %}
+
+  <button class="btn primary" type="submit" style="margin-top:16px">💾 Сохранить</button>
+</form>
+{% endblock %}

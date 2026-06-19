@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block content %}
+<div class="auth-wrap"><div class="auth-card">
+  <h1>Регистрация</h1><p class="sub">Создайте аккаунт BlackDev — код подтверждения придёт на почту</p>
+  <form method="post">
+    <input class="input" name="username" placeholder="Никнейм" required>
+    <input class="input" name="email" type="email" placeholder="Email" required>
+    <input class="input" name="password" type="password" placeholder="Пароль (мин. 6)" required>
+    <button class="btn primary" type="submit">Создать аккаунт</button>
+  </form>
+  <div class="or">— или —</div>
+  <div class="social">
+    <a class="btn" href="{{ url_for('auth_discord') }}">💬 Discord</a>
+    <a class="btn" href="{{ url_for('auth_google') }}">🔑 Google</a>
+  </div>
+  <div class="foot">Уже есть аккаунт? <a href="{{ url_for('login') }}" style="color:var(--accent)">Войти</a></div>
+</div></div>
+{% endblock %}

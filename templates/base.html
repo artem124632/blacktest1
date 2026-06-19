@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ site_settings.get('site_title','BlackDev') }} — {{ site_settings.get('site_tagline','Студия сборок ReallyWorld') }}</title>
+<meta name="description" content="BlackDev — студия сборок ReallyWorld. RW Default, RW Full, RW Business.">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>:root{--accent:{{ site_settings.get('accent_color','#ffb02e') }};--accent-2:{{ site_settings.get('accent_color_2','#ff6a00') }}}
+  {% if site_settings.get('bg_url') %}body{background-image:linear-gradient(rgba(11,10,9,.85),rgba(11,10,9,.95)),url("{{ site_settings.get('bg_url') }}");background-size:cover;background-position:center;background-attachment:fixed}{% endif %}</style>
+</head>
+<body data-effect="{{ site_settings.get('effect','none') }}">
+<canvas id="particles"></canvas>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">
+      {% if site_settings.get('logo_url') %}<img class="logo" src="{{ site_settings.get('logo_url') }}" alt="">{% endif %}
+      <span class="name">{{ site_settings.get('site_title','BlackDev') }}</span>
+      {% if site_settings.get('badge_url') %}<img class="badge" src="{{ site_settings.get('badge_url') }}" alt="">{% endif %}
+    </a>
+    <ul>
+      <li><a href="/#home">Главная</a></li>
+      <li><a href="/#услуги">Услуги</a></li>
+      <li><a href="/#reviews">Отзывы</a></li>
+      <li><a href="/#faq">FAQ</a></li>
+      <li><a href="/#contacts">Контакты</a></li>
+    </ul>
+    <div class="spacer"></div>
+    <div class="auth-btns">
+      {% if current_user.is_authenticated %}
+        <a class="btn" href="{{ url_for('profile') }}">{{ current_user.username }} · {{ '%.0f'|format(current_user.balance or 0) }} ₽</a>
+        <a class="btn ghost" href="{{ url_for('logout') }}">Выйти</a>
+      {% else %}
+        <a class="btn ghost" href="{{ url_for('login') }}">Войти</a>
+        <a class="btn primary" href="{{ url_for('register') }}">Регистрация</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<div class="container" style="margin-top:14px">
+    {% for cat,msg in msgs %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  </div>{% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<footer>
+  <div class="container">
+    © {{ current_year }} {{ site_settings.get('site_title','BlackDev') }} · Студия сборок ReallyWorld<br>
+    <a href="{{ site_settings.get('discord_url') }}" target="_blank">Discord</a> ·
+    <a href="{{ site_settings.get('telegram_url') }}" target="_blank">Telegram</a>
+  </div>
+</footer>
+
+<div class="float-contacts">
+  <a href="{{ site_settings.get('discord_url') }}" target="_blank" title="Discord">💬</a>
+  <a href="{{ site_settings.get('telegram_url') }}" target="_blank" title="Telegram">✈️</a>
+</div>
+
+<div class="modal" id="lightbox"><span class="close">×</span><img src="" alt=""></div>
+
+{% if site_settings.get('popup_enabled')=='1' and site_settings.get('popup_image') %}
+<div class="modal" id="site-popup">
+  <span class="close">×</span>
+  <div class="popup-card">
+    <img src="{{ site_settings.get('popup_image') }}" alt="">
+    <h3 style="margin-bottom:8px">Привет 👋</h3>
+    <p style="color:var(--muted);font-size:14px">Загляни в наш Discord — там скидки, ивенты и поддержка.</p>
+    <a class="btn primary" style="margin-top:14px" href="{{ site_settings.get('discord_url') }}" target="_blank">Открыть Discord</a>
+  </div>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/particles.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

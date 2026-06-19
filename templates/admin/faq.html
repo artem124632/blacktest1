@@ -1,0 +1,21 @@
+{% extends 'admin/_base.html' %}{% set active='faq' %}{% block adm %}
+<h1>FAQ</h1>
+<form method="post" class="card" style="margin-bottom:20px">
+  <input type="hidden" name="action" value="add">
+  <h2>Добавить вопрос</h2>
+  <div class="form-row"><label>Вопрос</label><input class="input" name="question" required></div>
+  <div class="form-row"><label>Ответ</label><textarea class="input" name="answer" rows="2" required></textarea></div>
+  <div class="form-row"><label>Порядок</label><input class="input" name="sort" type="number" value="0"></div>
+  <button class="btn primary">Добавить</button>
+</form>
+{% for f in faqs %}
+<form method="post" class="card" style="margin-bottom:10px">
+  <input type="hidden" name="action" value="edit"><input type="hidden" name="id" value="{{ f.id }}">
+  <div class="adm-grid">
+    <div class="form-row"><label>Вопрос</label><input class="input" name="question" value="{{ f.question }}"></div>
+    <div class="form-row"><label>Порядок</label><input class="input" name="sort" type="number" value="{{ f.sort }}"></div>
+  </div>
+  <div class="form-row"><label>Ответ</label><textarea class="input" name="answer" rows="2">{{ f.answer }}</textarea></div>
+  <div style="display:flex;gap:10px"><button class="btn primary">💾</button>
+  <button class="btn" formaction="" formmethod="post" name="action" value="del" onclick="return confirm('Удалить?')" style="color:#ff7a9b">🗑</button></div>
+</form>{% endfor %}{% endblock %}

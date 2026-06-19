@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block content %}
+<div class="auth-wrap"><div class="auth-card">
+  <h1>Подтвердите email</h1>
+  <p class="sub">Мы отправили 6-значный код на <b>{{ current_user.email }}</b></p>
+  <form method="post">
+    <input class="input" name="code" placeholder="000000" maxlength="6" required style="text-align:center;font-size:24px;letter-spacing:8px">
+    <button class="btn primary" type="submit">Подтвердить</button>
+  </form>
+  <div class="foot"><a href="#" onclick="fetch('/resend-code',{method:'POST'}).then(()=>alert('Код отправлен снова'));return false;" style="color:var(--accent)">Отправить код ещё раз</a></div>
+</div></div>
+{% endblock %}

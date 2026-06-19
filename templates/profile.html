@@ -1,0 +1,42 @@
+{% extends 'base.html' %}{% block content %}
+<div class="container" style="padding:60px 24px">
+  <h1 style="font-size:36px;margin-bottom:8px">Профиль</h1>
+  <p style="color:var(--muted);margin-bottom:24px">Привет, <b>{{ current_user.username }}</b>{% if not current_user.verified %} · <a href="{{ url_for('verify_email') }}" style="color:var(--accent)">подтвердите email</a>{% endif %}</p>
+
+  <div class="profile-grid">
+    <div>
+      <div class="card">
+        <h2>Баланс</h2>
+        <div class="balance-big">{{ '%.2f'|format(current_user.balance or 0) }} ₽</div>
+        <p style="color:var(--muted);font-size:13px;margin-top:8px">Пополните через ключ активации или в Discord</p>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Активировать ключ</h2>
+        <form method="post" action="{{ url_for('redeem_key') }}" style="display:grid;gap:10px">
+          <input class="input" name="code" placeholder="Введите ключ" required>
+          <button class="btn primary" type="submit">Активировать</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Мои покупки</h2>
+      {% if purchases %}
+      <table class="tbl">
+        <tr><th>Сборка</th><th>Цена</th><th>Дата</th><th></th></tr>
+        {% for p in purchases %}
+        <tr>
+          <td>{{ p.product.title }}</td>
+          <td>{{ '%.0f'|format(p.price) }} ₽</td>
+          <td>{{ p.created_at.strftime('%Y-%m-%d') }}</td>
+          <td><a class="btn primary" href="{{ url_for('download', purchase_id=p.id) }}">Скачать</a></td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+        <p style="color:var(--muted)">Покупок пока нет. <a href="/#услуги" style="color:var(--accent)">Перейти к сборкам →</a></p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'admin/_base.html' %}{% set active='keys' %}{% block adm %}
+<h1>Ключи пополнения баланса</h1>
+<form method="post" class="card" style="margin-bottom:20px">
+  <h2>Создать ключ</h2>
+  <div class="adm-grid" style="margin-top:12px">
+    <div class="form-row"><label>Сумма ₽</label><input class="input" name="amount" type="number" step="0.01" required></div>
+    <div class="form-row"><label>На сколько активаций</label><input class="input" name="uses" type="number" value="1" min="1"></div>
+    <div class="form-row"><label>Код (пусто = сгенерировать)</label><input class="input" name="code" placeholder="авто"></div>
+  </div>
+  <button class="btn primary" style="margin-top:10px">Создать</button>
+</form>
+<table class="tbl">
+<tr><th>Код</th><th>Сумма</th><th>Использован</th><th>Создан</th><th></th></tr>
+{% for k in keys %}
+<tr><td><code>{{ k.code }}</code></td><td>{{ '%.2f'|format(k.amount) }}</td>
+<td>{{ k.uses }} / {{ k.max_uses }}</td><td>{{ k.created_at.strftime('%Y-%m-%d') }}</td>
+<td><form method="post" action="{{ url_for('admin_del_key', kid=k.id) }}"><button class="btn" style="color:#ff7a9b">🗑</button></form></td></tr>
+{% endfor %}</table>{% endblock %}

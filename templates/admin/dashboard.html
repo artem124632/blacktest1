@@ -1,0 +1,17 @@
+{% extends 'admin/_base.html' %}{% set active='dash' %}{% block adm %}
+<h1>Dashboard</h1>
+<div class="adm-grid">
+  <div class="stat-card"><b>{{ stats.users }}</b><span>Пользователей</span></div>
+  <div class="stat-card"><b>{{ stats.purchases }}</b><span>Покупок</span></div>
+  <div class="stat-card"><b>{{ stats.reviews }}</b><span>Отзывов</span></div>
+  <div class="stat-card"><b>{{ '%.0f'|format(stats.revenue) }} ₽</b><span>Оборот</span></div>
+</div>
+<div class="card" style="margin-top:24px">
+  <h2>Быстрые действия</h2>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+    <a class="btn primary" href="{{ url_for('admin_settings') }}">Настройки</a>
+    <a class="btn" href="{{ url_for('admin_products') }}">Загрузить файлы сборок</a>
+    <a class="btn" href="{{ url_for('admin_keys') }}">Сгенерировать ключ</a>
+  </div>
+</div>
+{% endblock %}

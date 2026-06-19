@@ -1,0 +1,17 @@
+{% extends 'admin/_base.html' %}{% set active='users' %}{% block adm %}
+<h1>Пользователи</h1>
+<form method="get" style="margin-bottom:16px"><input class="input" name="q" value="{{ q }}" placeholder="🔍 Поиск по нику или email" style="max-width:400px"></form>
+<table class="tbl">
+<tr><th>ID</th><th>Ник</th><th>Email</th><th>Verified</th><th>Баланс</th><th>Действия</th></tr>
+{% for u in users %}
+<tr>
+  <td>{{ u.id }}</td><td>{{ u.username }}</td><td>{{ u.email or '—' }}</td>
+  <td>{{ '✓' if u.verified else '—' }}</td>
+  <td>
+    <form method="post" action="{{ url_for('admin_set_balance', uid=u.id) }}" style="display:flex;gap:6px">
+      <input class="input" name="balance" type="number" step="0.01" value="{{ u.balance or 0 }}" style="width:110px;padding:6px 10px">
+      <button class="btn">💾</button></form>
+  </td>
+  <td><form method="post" action="{{ url_for('admin_del_user', uid=u.id) }}" onsubmit="return confirm('Удалить?')"><button class="btn" style="color:#ff7a9b">🗑</button></form></td>
+</tr>{% endfor %}
+</table>{% endblock %}
