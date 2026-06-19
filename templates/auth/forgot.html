@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block content %}
+<div class="auth-wrap auth-page-login">
+  <div class="auth-card auth-card-pro fade-in-up">
+    <div class="auth-glow"></div>
+    <div class="auth-head">
+      <span class="auth-kicker">ВОССТАНОВЛЕНИЕ</span>
+      <h1>Забыли пароль?</h1>
+      <p class="sub">Введите email — отправим код для сброса.</p>
+    </div>
+
+    <form method="post" class="auth-form">
+      <label class="field">
+        <span>Email</span>
+        <input class="input" name="email" type="email" autocomplete="email" placeholder="example@mail.ru" required>
+      </label>
+      <button class="btn primary auth-submit" type="submit">Отправить код</button>
+    </form>
+
+    <div class="auth-switch">
+      <span>Вспомнили пароль?</span>
+      <a href="{{ url_for('login') }}">Войти</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
