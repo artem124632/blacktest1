@@ -102,11 +102,18 @@ def _from_json(s):
 # ===================== МОДЕЛИ =====================
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=True)
+    email = db.Column(db.String(255), nullable=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255))
-    discord_id = db.Column(db.String(64), unique=True, nullable=True)
-    google_id = db.Column(db.String(128), unique=True, nullable=True)
+    discord_id = db.Column(db.String(64), nullable=True)
+    google_id = db.Column(db.String(128), nullable=True)
+    
+    # Добавьте составной уникальный индекс
+    __table_args__ = (
+        db.UniqueConstraint('email', name='uq_user_email'),
+        db.UniqueConstraint('discord_id', name='uq_user_discord_id'),
+        db.UniqueConstraint('google_id', name='uq_user_google_id'),
+    )
     avatar = db.Column(db.String(500))
     verified = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Float, default=0.0)
