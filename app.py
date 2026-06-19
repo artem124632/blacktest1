@@ -426,6 +426,80 @@ def resend_code():
         return jsonify(error=str(e)), 500
     return jsonify(ok=True)
 
+# =====================================================================
+# СБРОС ПАРОЛЯ — добавь этот блок в app.py (например, после /resend-code).
+# Никаких других правок в app.py не требуется: используется существующая
+# модель EmailCode с purpose='reset' и flask_mail.
+# =====================================================================
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip().lower()
+        if not email:
+            flash('Введите email', 'error')
+            return redirect(url_for('forgot_password'))
+        u = User.query.filter_by(email=email).first()
+        # всегда отвечаем одинаково, чтобы нельзя было перебирать email-ы
+        if u:
+            code = ''.join(secrets.choice('0123456789') for _ in range(6))
+            db.session.add(EmailCode(email=email, code=code, purpose='reset'))
+            db.session.commit()
+            try:
+                mail.send(Message(
+                    'Сброс пароля BlackDev',
+                    recipients=[email],
+                    body=f'Код для сброса пароля: {code}\nЕсли вы не запрашивали — игнорируйте письмо.'
+                ))
+            except Exception as e:
+                app.logger.warning(f'mail fail (reset): {e}')
+        flash('Если email зарегистрирован — мы отправили код на почту.', 'ok')
+        return redirect(url_for('reset_password', email=email))
+    return render_template('auth/forgot.html')
+
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    prefill_email = (request.args.get('email') or '').strip().lower()
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip().lower()
+        code = (request.form.get('code') or '').strip()
+        pwd = request.form.get('password') or ''
+        pwd2 = request.form.get('password2') or ''
+        if not (email and code and pwd):
+            flash('Заполните все поля', 'error')
+            return redirect(url_for('reset_password', email=email))
+        if len(pwd) < 6:
+            flash('Пароль минимум 6 символов', 'error')
+            return redirect(url_for('reset_password', email=email))
+        if pwd != pwd2:
+            flash('Пароли не совпадают', 'error')
+            return redirect(url_for('reset_password', email=email))
+
+        rec = (EmailCode.query
+               .filter_by(email=email, code=code, purpose='reset')
+               .order_by(EmailCode.created_at.desc())
+               .first())
+        # код живёт 30 минут
+        if not rec or (dt.datetime.utcnow() - rec.created_at) > dt.timedelta(minutes=30):
+            flash('Код неверный или истёк', 'error')
+            return redirect(url_for('reset_password', email=email))
+
+        u = User.query.filter_by(email=email).first()
+        if not u:
+            flash('Пользователь не найден', 'error')
+            return redirect(url_for('forgot_password'))
+
+        u.set_password(pwd)
+        db.session.delete(rec)
+        # подчищаем старые коды сброса для этого email
+        EmailCode.query.filter_by(email=email, purpose='reset').delete()
+        db.session.commit()
+        flash('Пароль изменён, войдите с новым паролем ✓', 'ok')
+        return redirect(url_for('login'))
+
+    return render_template('auth/reset.html', prefill_email=prefill_email)
+
 @app.route('/logout')
 def logout(): logout_user(); return redirect(url_for('index'))
 
