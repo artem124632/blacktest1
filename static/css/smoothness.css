@@ -1,0 +1,62 @@
+/* =====================================================================
+   ПЛАВНОСТЬ — добавь этот файл и подключи в base.html ПОСЛЕ style.css:
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/smoothness.css') }}">
+   Либо просто скопируй содержимое в конец static/css/style.css.
+   ===================================================================== */
+
+* { transition: background-color .25s ease, color .25s ease,
+                border-color .25s ease, box-shadow .25s ease,
+                transform .25s ease, opacity .25s ease, filter .25s ease; }
+
+html { scroll-behavior: smooth; }
+
+/* Кнопки — мягкий hover/press */
+.btn { will-change: transform; transition: transform .18s cubic-bezier(.2,.7,.2,1),
+       background-color .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.btn:hover  { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.25); }
+.btn:active { transform: translateY(0) scale(.98); transition-duration: .08s; }
+
+/* Ссылки */
+a { transition: color .2s ease, opacity .2s ease; }
+a:hover { opacity: .85; }
+
+/* Поля ввода */
+.input, input, select, textarea {
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .25s ease;
+}
+.input:focus, input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(255,176,46,.25);
+  outline: none;
+}
+
+/* Карточки/модалки */
+.card, .auth-card, .auth-card-pro, .popup-card, .modal .popup-card {
+  transition: transform .35s cubic-bezier(.2,.7,.2,1),
+              box-shadow .35s ease, opacity .35s ease;
+}
+.card:hover { transform: translateY(-3px); }
+
+/* Flash-сообщения */
+.flash { animation: fadeInDown .35s ease both; }
+
+/* Появление контента */
+.fade-in-up { animation: fadeInUp .5s cubic-bezier(.2,.7,.2,1) both; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Маленькая утилита для строки «забыли пароль» */
+.auth-row-end { display:flex; justify-content:flex-end; margin:-6px 0 6px; }
+.link-muted   { color: var(--muted,#9a958c); font-size: 13px; text-decoration: none; }
+.link-muted:hover { color: var(--accent,#ffb02e); }
+
+/* Уважаем системную настройку «уменьшить движение» */
+@media (prefers-reduced-motion: reduce) {
+  *, html { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
